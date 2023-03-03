@@ -905,6 +905,310 @@ SELECT * FROM MS_STUDENT;
 DELETE FROM MS_STUDENT;
 
 
+-- 66.
+-- 테이블 기술서를 참고하여 MS_USER 테이블을 생성하시오.
+CREATE TABLE MS_USER (
+      
+      USER_NO     NUMBER            NOT NULL    PRIMARY KEY ,
+      USER_ID     VARCHAR2(100)     NOT NULL    UNIQUE ,
+      USER_PW     VARCHAR2(200)     NOT NULL ,
+      USER_NAME   VARCHAR2(50)      NOT NULL ,
+      BIRTH       DATE              NOT NULL ,
+      TEL         VARCHAR2(20)      NOT NULL UNIQUE ,
+      ADDRESS     VARCHAR2(200)     NULL ,
+      REG_DATE    DATE        DEFAULT sysdate NOT NULL,
+      UPD_DATE    DATE        DEFAULT sysdate NOT NULL
+);
+
+-- 한줄 복사 : alt + shift + ↓
+COMMENT ON TABLE MS_USER IS '회원';
+COMMENT ON COLUMN MS_USER.USER_NO IS '회원정보';
+COMMENT ON COLUMN MS_USER.USER_ID IS '아이디';
+COMMENT ON COLUMN MS_USER.USER_PW IS '비밀번호';
+COMMENT ON COLUMN MS_USER.USER_NAME IS '이름';
+COMMENT ON COLUMN MS_USER.BIRTH IS '생년월일';
+COMMENT ON COLUMN MS_USER.TEL IS '전화번호';
+COMMENT ON COLUMN MS_USER.ADDRESS IS '주소';
+COMMENT ON COLUMN MS_USER.REG_DATE IS '등록일자';
+COMMENT ON COLUMN MS_USER.UPD_DATE IS '수정일자';
+
+
+-- 67.
+-- MS_BOARD 테이블을 생성하시오.
+CREATE TABLE MS_BOARD (
+      BOARD_NO    NUMBER            NOT NULL PRIMARY KEY ,
+      TITLE       VARCHAR2(200)     NOT NULL ,
+      CONTENT     CLOB              NOT NULL ,
+      WRITER      VARCHAR2(100)     NOT NULL ,
+      HIT         NUMBER            NOT NULL ,
+      LIKE_CNT    NUMBER            NOT NULL ,
+      DEL_YN      CHAR(2)           NULL ,
+      DEL_DATE    DATE              NULL ,
+      REG_DATE    DATE              DEFAULT sysdate NOT NULL ,
+      UPD_DATE    DATE              DEFAULT sysdate NOT NULL 
+);
+
+COMMENT ON TABLE MS_BOARD IS '게시판';
+COMMENT ON COLUMN MS_BOARD.BOARD_NO IS '게시글 번호';
+COMMENT ON COLUMN MS_BOARD.TITLE IS '제목';
+COMMENT ON COLUMN MS_BOARD.CONTENT IS '내용';
+COMMENT ON COLUMN MS_BOARD.WRITER IS '작성자';
+COMMENT ON COLUMN MS_BOARD.HIT IS '조회수';
+COMMENT ON COLUMN MS_BOARD.LIKE_CNT IS '좋아요 수';
+COMMENT ON COLUMN MS_BOARD.DEL_YN IS '삭제여부';
+COMMENT ON COLUMN MS_BOARD.DEL_DATE IS '삭제일자';
+COMMENT ON COLUMN MS_BOARD.REG_DATE IS '등록일자';
+COMMENT ON COLUMN MS_BOARD.UPD_DATE IS '수정일자';
+
+
+
+
+-- 68.
+-- MS_FILE 테이블을 생성하시오.
+CREATE TABLE MS_FILE (
+      FILE_NO     NUMBER NOT NULL PRIMARY KEY ,
+      BOARD_NO    NUMBER NOT NULL ,
+      FILE_NAME   VARCHAR2(2000) NOT NULL ,
+      FILE_DATA   BLOB  NOT NULL ,
+      REG_DATE    DATE  DEFAULT sysdate NOT NULL ,
+      UPD_DATE    DATE  DEFAULT sysdate NOT NULL 
+);
+
+COMMENT ON TABLE MS_FILE '첨부파일';
+COMMENT ON COLUMN MS_FILE.FILE_NO IS '파일번호';
+COMMENT ON COLUMN MS_FILE.BOARD_NO IS '글번호';
+COMMENT ON COLUMN MS_FILE.FILE_NAME IS '파일명';
+COMMENT ON COLUMN MS_FILE.FILE_DATA IS '파일';
+COMMENT ON COLUMN MS_FILE.REG_DATE IS '등록일자';
+COMMENT ON COLUMN MS_FILE.UPD_DATE IS '수정일자';
+
+-- 69.
+-- MS_REPLY 테이블을 생성하시오.
+CREATE TABLE MS_REPLY (
+
+      REPLY_NO    NUMBER      NOT NULL PRIMARY KEY ,
+      BOARD_NO    NUMBER      NOT NULL ,
+      CONTENT     VARCHAR2(2000)    NOT NULL ,
+      WRITER      VARCHAR2(100)    NOT NULL ,
+      DEL_YN      CHAR(2)     DEFAULT 'N' NULL ,
+      DEL_DATE    DATE        NULL ,
+      REG_DATE    DATE        DEFAULT sysdate NOT NULL ,
+      UPD_DATE    DATE        DEFAULT sysdate NOT NULL 
+);
+
+COMMENT ON TABLE MS_REPLY IS '댓글';
+COMMENT ON COLUMN MS_REPLY.REPLY_NO IS '댓글번호';
+COMMENT ON COLUMN MS_REPLY.BOARD_NO IS '글번호';
+COMMENT ON COLUMN MS_REPLY.CONTENT IS '내용';
+COMMENT ON COLUMN MS_REPLY.WRITER IS '작성자';
+COMMENT ON COLUMN MS_REPLY.DEL_YN IS '삭제여부';
+COMMENT ON COLUMN MS_REPLY.DEL_DATE IS '삭제일자';
+COMMENT ON COLUMN MS_REPLY.REG_DATE IS '등록일자';
+COMMENT ON COLUMN MS_REPLY.UPD_DATE IS '수정일자';
+
+
+-- 70.
+-- human 계정에 있는 모든 데이터를 human2 계정으로 가져오기 위해서
+-- human.dmp 파일을 만들었다. human2 게정으로 접속하여
+-- human.dmp 파일을 import 하시오.
+
+-- 1. human, human2 계정 생성
+-- 2. human.dmp 파일 import
+
+-- 덤프파일 가져오기 (import)
+-- import 시, dmp 파일을 생성한 계정과 다른 계정으로 가져올 때는
+-- system 계정 또는 가져올 계정으로 접속하여 명령어를 실행해야한다.
+-- * import 명령 : imp    (cmd 에서 실행)
+/*
+  imp userid=system/123456 file=C:\KHM\SQL\community.dmp fromuser=human tosuser=human;
+*/
+
+-- ▶ 계정 삭제
+-- 계정 삭제 및 생성 시, 세션 속성 TRUE 로 변경 후 진행.
+ALTER SESSION SET "_ORACLE_SCRIPT" = TRUE;
+
+-- 계정이 DBA(DB 관리자) 권한이 있다면,
+-- DBA 권한을 해제 후 삭제해야한다.
+REVOKE DBA from human;
+DROP USER human;
+
+
+ALTER SESSION SET "_ORACLE_SCRIPT" = TRUE;
+-- human, human2 의 DBA 권한 제거하기
+REVOKE DBA from human;
+REVOKE DBA from human2;
+
+
+-- human, human2 계정 삭제하기
+DROP USER human CASCADE;
+DROP USER human2 CASCADE;
+
+
+-- human 계정 생성하기
+ALTER SESSION SET "_ORACLE_SCRIPT" = TRUE;
+CREATE USER human IDENTIFIED BY 123456;
+ALTER USER human QUOTA UNLIMITED ON users;
+GRANT DBA TO human;
+
+-- human2 계정 생성하기
+ALTER SESSION SET "_ORACLE_SCRIPT" = TRUE;
+CREATE USER human2 IDENTIFIED BY 123456;
+ALTER USER human2 QUOTA UNLIMITED ON users;
+GRANT DBA TO human2;
+
+-- community.dmp 를 human 계정으로 가져오기
+imp userid=system/123456 file=C:\KHM\SQL\community.dmp fromuser=human touser=human
+
+-- human.dmp 를 human2 계정으로 가져오기
+imp userid=system/123456 file=C:\KHM\SQL\human.dmp fromuser=human touser=human2
+
+-- 71.
+-- human 계정이 소유하고 있는 데이터를
+-- "human_exp.dmp" 덤프파일로 export 하는 명령어를 작성하시오.
+exp userid=human/123456 file=C:\KHM\SQL\human_exp.dmp log=C:\KHM\SQL\human_exp.log
+
+
+
+
+-- 72.
+-- MS_BOARD 의 WRITER 속성을 NUMBER 타입으로 변경하고
+-- MS_USER 의 USER_NO 를 참조하는 외래키로 지정하시오.
+
+-- 1)
+-- 데이터 타입 변경
+ALTER TABLE MS_BOARD MODIFY WRITER NUMBER;
+-- 제약조건 삭제
+ALTER TABLE MS_BOARD DROP CONSTRAINT MS_BOARD_WRITER_FK;
+-- 외래키 지정
+ALTER TABLE MS_BOARD ADD CONSTRAINT MS_BOARD_WRITER_FK
+FOREIGN KEY (WRITER) REFERENCES MS_USER(USER_NO);
+
+
+-- 2) 외래키 : MS_FILE (BOARD_NO)  ---->  MS_BOARD (BOARD_NO)
+ALTER TABLE MS_FILE ADD CONSTRAINT MS_FILE_BOARD_NO_FK
+FOREIGN KEY (BOARD_NO) REFERENCES MS_BOARD(BOARD_NO);
+
+
+-- 3) 외래키 : MS_REPLY (BOARD_NO)  ---->  MS_BOARD (BOARD_NO)
+ALTER TABLE MS_REPLY ADD CONSTRAINT MS_REPLY_BOARD_NO_FK
+FOREIGN KEY (BOARD_NO) REFERENCES MS_BOARD(BOARD_NO);
+
+-- 73.
+-- MS_USER 테이블에 속성을 추가하시오.
+
+ALTER TABLE MS_USER ADD CTZ_NO CHAR(14) NOT NULL UNIQUE;
+ALTER TABLE MS_USER ADD GENDER CHAR(6) NOT NULL;
+
+COMMENT ON COLUMN MS_USER.CTZ_NO IS '주민번호';
+COMMENT ON COLUMN MS_USER.GENDER IS '성별';
+
+DESC MS_USER;
+
+
+-- 74.
+-- MS_USER 의 GENDER 속성이 ('여','남','기타') 값만 갖도록
+-- 제약조건을 추가하시오.
+ALTER TABLE MS_USER
+ADD CONSTRAINT MS_USER_GENDER_CHECK
+CHECK (gender IN ('여','남','기타') )
+;
+
+
+-- 75.
+-- MS_FILE 테이블에 확장자(EXT) 속성을 추가하시오.
+ALTER TABLE MS_FILE ADD EXT VARCHAR2(10) NULL;
+COMMENT ON COLUMN MS_FILE.EXT IS  '확장자';
+
+
+
+-- 76. 
+MERGE INTO MS_FILE T    -- 대상 테이블 지정
+-- 사용할 데이터의 자원을 지정
+USING ( SELECT FILE_NO, FILE_NAME FROM MS_FILE ) F 
+-- ON (update 될 조건)
+ON (T.FILE_NO = F.FILE_NO)
+-- 매치조건에 만족한 경우
+WHEN MATCHED THEN
+    -- SUBSTR( 문자열, 시작번호 )
+    -- ex. SUBSTR( '/upload/강아지.png' , 12 )  --->  png
+    UPDATE SET T.EXT = SUBSTR(F.FILE_NAME, INSTR(F.FILE_NAME, '.', -1) + 1 )
+    DELETE WHERE SUBSTR(F.FILE_NAME, INSTR(F.FILE_NAME, '.', -1) +1)
+                NOT IN (  'jpeg', 'jpg', 'gif', 'png' )
+-- WHEN NOT MATCHED THEN
+--   [매치가 안 될 때,]
+;
+
+-- 유저 추가
+INSERT INTO MS_USER( 
+        USER_NO, USER_ID, USER_PW, USER_NAME, BIRTH, 
+        TEL, ADDRESS, REG_DATE, UPD_DATE, 
+        CTZ_NO, GENDER
+        )
+VALUES (
+        1, 'ALOHA', '123456', '김휴먼', '2003/01/01', 
+        '010-1234-1234', '영등포', sysdate, sysdate,
+        '200101-1112222', '기타'
+        );        
+-- 게시글 추가
+INSERT INTO MS_BOARD ( 
+            BOARD_NO, TITLE, CONTENT, WRITER, HIT, LIKE_CNT,
+            DEL_YN, DEL_DATE, REG_DATE, UPD_DATE
+            )
+VALUES (
+        2, '제목', '내용', 1, 0, 0, 'N', NULL, sysdate, sysdate
+        );
+
+-- 파일 추가
+INSERT INTO MS_FILE ( 
+            FILE_NO, BOARD_NO, FILE_NAME, FILE_DATA, REG_DATE, UPD_DATE, EXT 
+            )
+VALUES ( 2, 2, '강아지.png', '123', sysdate, sysdate, 'jpg' );
+
+SELECT * FROM MS_USER;
+SELECT * FROM MS_BOARD;
+SELECT * FROM MS_FILE;
+
+
+-- 77.
+-- 테이블 MS_FILE 의 EXT 속성이 
+-- (‘jpg’, ‘jpeg’, ‘gif’, ‘png’) 값을 갖도록 하는 제약조건을 추가하시오.
+
+ALTER TABLE MS_FILE 
+ADD CONSTRAINT MS_FILE_EXT_CHECK 
+CHECK (EXT IN ('jpg', 'jpeg', 'gif', 'png') );
+
+
+-- 78.
+-- MS_USER, MS_BOARD, MS_FILE, MS_REPLY 테이블의
+-- 모든 데이터를 삭제하는 명령어를 작성하시오.
+TRUNCATE TABLE MS_USER;
+TRUNCATE TABLE MS_BOARD;
+TRUNCATE TABLE MS_FILE;
+TRUNCATE TABLE MS_REPLY;
+
+SELECT * FROM MS_USER;
+SELECT * FROM MS_BOARD;
+SELECT * FROM MS_FILE;
+SELECT * FROM MS_REPLY;
+
+-- DELETE vs TRUNCATE
+-- * DELETE - 데이터 조작어(DML)
+--    - 한 행 단위로 데이터를 삭제 처리한다
+--    - COMMIT, ROLLABCK 으로 변경사항을 적용하거나 되돌릴 수 있음
+
+-- * TRUNCATE - 데이터 정의어 (DDL)
+--    - 모든 행을 삭제한다
+--    - 삭제된 데이터를 되돌릴 수 없음
+
+
+
+
+
+
+
+
+
+
 
 
 
