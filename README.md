@@ -1,5 +1,7 @@
 # ALOHA / 휴먼교육센터 오라클 데이터베이스 실습
 
+<iframe width="560" height="315" src="https://www.youtube.com/embed/_JMsueZgdc0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
 ## HR 계정 생성 및 샘플데이터 준비
 #### ★ HR 계정 생성하기
 ```
