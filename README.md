@@ -66,7 +66,7 @@ ALTER SESSION SET "_ORACLE_SCRIPT" = TRUE;
 REVOKE DBA from 계정명;    -- DBA 권한 있을 시 삭제 안되므로, 권한 제거
 DROP USER 계정명;
 ```
-
+<br><br>
 
 ## CMD 창에서 덤프 명령어 사용
 
