@@ -21,7 +21,7 @@ GRANT DBA TO HR;
 --> 4  : [log 경로] - C:\~\db_home\demo\schema\log          // 샘플 데이터 가져올 때, 로그파일 저장하 경로
 ```
 
-<hr>
+<br><br>
 
 ## human 계정 생성 및 덤프파일 가져오기
 #### ★ human 계정 생성하기
@@ -39,7 +39,7 @@ GRANT DBA TO human;
 imp userid=system/123456 file='경로\community.dmp' fromuser=human touser=human
 ```
 
-<hr>
+<br><br>
 
 ## human2 계정 생성 및 덤프파일 가져오기
 #### ★ human2 계정 생성하기
@@ -57,7 +57,7 @@ GRANT DBA TO human2;
 imp userid=system/123456 file='경로\human.dmp' fromuser=human touser=human2
 ```
 
-<hr>
+<br><br>
 
 ## 계정 삭제하기
 ```
