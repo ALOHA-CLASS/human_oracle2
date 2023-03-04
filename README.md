@@ -3,6 +3,9 @@
 ## ORACLE 설치
 https://youtu.be/_JMsueZgdc0?list=PL4C2AmBC9jObqw1BDuUjTl50CMu1CpiiL
 
+## 수업 다시 보기
+https://www.youtube.com/playlist?list=PL4C2AmBC9jOZ-CwqrzqOoUv58wSxlJk-o
+
 <br><br>
 
 ## HR 계정 생성 및 샘플데이터 준비
