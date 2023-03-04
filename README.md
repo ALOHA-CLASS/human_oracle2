@@ -1,6 +1,6 @@
 # ALOHA / 휴먼교육센터 오라클 데이터베이스 실습
 
-
+## HR 계정 생성 및 샘플데이터 준비
 #### ★ HR 계정 생성하기
 ```
 [SQL]
@@ -23,6 +23,7 @@ GRANT DBA TO HR;
 
 <hr>
 
+## human 계정 생성 및 덤프파일 가져오기
 #### ★ human 계정 생성하기
 ```
 [SQL]
@@ -40,6 +41,7 @@ imp userid=system/123456 file='경로\community.dmp' fromuser=human touser=human
 
 <hr>
 
+## human2 계정 생성 및 덤프파일 가져오기
 #### ★ human2 계정 생성하기
 ```
 [SQL]
@@ -56,6 +58,14 @@ imp userid=system/123456 file='경로\human.dmp' fromuser=human touser=human2
 ```
 
 <hr>
+
+## 계정 삭제하기
+```
+[system 계정 접속]
+ALTER SESSION SET "_ORACLE_SCRIPT" = TRUE;
+REVOKE DBA from 계정명;    -- DBA 권한 있을 시 삭제 안되므로, 권한 제거
+DROP USER 계정명;
+```
 
 
 ## CMD 창에서 덤프 명령어 사용
