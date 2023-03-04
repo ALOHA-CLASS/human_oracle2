@@ -11,8 +11,9 @@ GRANT DBA TO HR;
 ```
 
 #### ★ HR 샘플 데이터 가져오기
-[SQL PLUS]
+
 ```
+[SQL PLUS]
 @?/demo/schema/human_resources/hr_main.sql
 --> 1  : 123456 [비빌번호]                                  // HR 계정 비밀번호
 --> 2  : users [tablespace]             
