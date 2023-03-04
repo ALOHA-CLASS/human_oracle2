@@ -1,10 +1,18 @@
 # ALOHA / 휴먼교육센터 오라클 데이터베이스 실습
 
 
-#### ★ hr 계정 생성하기
+#### ★ HR 계정 생성하기
+```
+[SQL]
+ALTER SESSION SET "_ORACLE_SCRIPT" = TRUE;
+CREATE USER HR IDENTIFIED BY 123456;
+ALTER USER HR QUOTA UNLIMITED ON users;
+GRANT DBA TO HR;
 ```
 
-```
+#### ★ HR 샘플 데이터 가져오기
+[SQL PLUS]
+
 
 
 
