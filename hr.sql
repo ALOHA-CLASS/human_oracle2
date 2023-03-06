@@ -641,7 +641,7 @@ CREATE TABLE MS_STUDENT
     , MJ_NO NUMBER NOT NULL 
     , REG_DATE DATE DEFAULT sysdate NOT NULL 
     , UPD_DATE DATE DEFAULT sysdate NOT NULL 
-    , ETC VARCHAR2(2000) DEFAULT '없음' 
+    , ETC VARCHAR2() DEFAULT '없음' 
     , CONSTRAINT MS_STUDENT_PK PRIMARY KEY 
   (
     ST_NO 
@@ -1201,11 +1201,520 @@ SELECT * FROM MS_REPLY;
 --    - 삭제된 데이터를 되돌릴 수 없음
 
 
+-- 79.
+-- 테이블의 속성을 삭제하시오.
+-- * MS_BOARD 테이블의 WRITER 속성
+-- * MS_FILE 테이블의 BOARD_NO 속성
+-- * MS_REPLY 테이블의 BOARD_NO 속성
+ALTER TABLE MS_BOARD DROP COLUMN WRITER;
+ALTER TABLE MS_FILE DROP COLUMN BOARD_NO;
+ALTER TABLE MS_REPLY DROP COLUMN BOARD_NO;
+
+-- 80.
+-- 각 테이블에 속성들을 추가한 뒤, 외래키로 지정하시오.
+-- 해당 외래키에 대하여 참조 테이블의 데이터 삭제시,
+-- 연결된 속성의 값도 삭제하는 옵션도 지정하시오.
+
+-- 1)
+-- MS_BOARD 에 WRITER 속성 추가
+ALTER TABLE MS_BOARD ADD WRITER NUMBER NOT NULL;
+
+-- WRITER 속성을 외래키로 지정
+-- 참조테이블 : MS_USER, 참조 속성 : USER_NO
+-- + 참조테이블 데이터 삭제시, 연쇄적으로 함께 삭제하는 옵션 지정
+ALTER TABLE MS_BOARD
+ADD CONSTRAINT MS_BOARD_WRITER_FK FOREIGN KEY (WRITER)
+REFERENCES MS_USER(USER_NO)
+ON DELETE CASCADE;
+
+
+-- 2)
+-- MS_FILE 에 BOARD_NO 속성 추가
+ALTER TABLE MS_FILE ADD BOARD_NO NUMBER NOT NULL;
+
+-- BOARD_NO 속성을 외래키로 지정
+-- 참조테이블 : MS_BOARD, 참조 속성 : BOARD_NO
+-- + 참조테이블 데이터 삭제시, 연쇄적으로 함께 삭제하는 옵션 지정
+ALTER TABLE MS_FILE
+ADD CONSTRAINT MS_FILE_BOARD_NO_FK FOREIGN KEY (BOARD_NO)
+REFERENCES MS_BOARD(BOARD_NO)
+ON DELETE CASCADE;
+
+-- 3)
+-- MS_REPLY 에 BOARD_NO 속성 추가
+ALTER TABLE MS_REPLY ADD BOARD_NO NUMBER NOT NULL;
+
+-- BOARD_NO 속성을 외래키로 지정
+-- 참조테이블 : MS_BOARD, 참조 속성 : BOARD_NO
+-- + 참조테이블 데이터 삭제시, 연쇄적으로 함께 삭제하는 옵션 지정
+ALTER TABLE MS_REPLY
+ADD CONSTRAINT MS_REPLY_BOARD_NO_FK FOREIGN KEY (BOARD_NO)
+REFERENCES MS_BOARD(BOARD_NO)
+ON DELETE CASCADE;
+
+
+SELECT *
+FROM MS_USER;
+
+--
+INSERT INTO MS_FILE 
+       ( file_no, file_name, file_data, reg_date, upd_date, board_no)
+VALUES 
+       (  1, '강아지.png', '123', sysdate, sysdate, 1);
+--
+INSERT INTO MS_FILE 
+       ( file_no, file_name, file_data, reg_date, upd_date, board_no)
+VALUES 
+       (  2, '고양이.jpg', '123', sysdate, sysdate, 1);
+       
+commit;
+
+
+
+
+DELETE FROM MS_USER WHERE USER_NO = 1;
+
+SELECT * FROM MS_USER;
+SELECT * FROM MS_BOARD;
+SELECT * FROM MS_FILE;
+SELECT * FROM MS_REPLY;
+
+
+-- 외래키 제약조건 정리
+ALTER TABLE 테이블명
+ADD CONSTRAINT 제약조건명 FOREIGN KEY (외래키 속성)
+REFERENCES 참조테이블(참조 속성);
+-- 옵션
+-- * ON UPDATE          -- 참조 테이블 수정 시,
+--   * CASCADE          : 부모 데이터 수정 시, 자식 데이터도 수정
+--   * SET NULL         : 부모 데이터 수정 시, 자식 데이터는 NULL
+--   * SET DEFAULT      : 부모 데이터 수정 시, 자식 데이터는 기본값으로
+--   * RESTRICT         : 자식 테이블이 참조하는 경우, 부모 데이터 수정 불가
+--   * NO ACTION        : 아무런 행위도 취하지 않는다 (기본값)
+
+-- * ON DELETE          -- 참조 테이블 삭제 시,
+--   * CASCADE          : 부모 데이터 삭제 시, 자식 데이터도 삭제
+--   * SET NULL         : 부모 데이터 삭제 시, 자식 데이터는 NULL
+--   * SET DEFAULT      : 부모 데이터 삭제 시, 자식 데이터는 기본값으로
+--   * RESTRICT         : 자식 테이블이 참조하는 경우, 부모 데이터 삭제 불가
+--   * NO ACTION        : 아무런 행위도 취하지 않는다 (기본값)
+
+
+
+-- ▶ 서브쿼리
+/*
+      : SQL 문 내부에 사용하는 SELECT 문
+      * 메인쿼리 : 서브쿼리를 사용하는 최종적인 SELECT 문
+
+      * 사용 위치에 다른 분류
+      - 스칼라 서브쿼리 : SELECT 절에 사용하는 서브쿼리
+      - 인라인 뷰       : FROM 절에 사용하는 서브쿼리
+      - 서브 쿼리       : WHERE 절에 사용하는 서브커리
+*/
+
+-- 81.
+-- EMPLOYEE, DEPARTMENT, JOB 테이블을 사용하여
+-- 스칼라 서브쿼리로 출력결과와 같이 조회하시오.
+SELECT * FROM employee;    
+SELECT * FROM department;
+SELECT * FROM job;
+
+-- 스칼라 서브쿼리
+SELECT emp_id AS 사원번호
+      ,emp_name AS 직원명
+      ,(SELECT dept_title FROM department d WHERE d.dept_id = e.dept_code) 부서명
+      ,(SELECT job_name FROM job j WHERE j.job_code = e.job_code ) 직급명
+FROM employee e;
+
+-- (실행순서)
+-- FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY
+
+
+-- JOIN
+
+-- INNER JOIN (내부조인)
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급명
+FROM employee e 
+     JOIN department d ON e.dept_code = d.dept_id
+     JOIN job j ON e.job_code = j.job_code
+;
+
+-- EQUI JOIN
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급명
+FROM employee e, department d, job j
+WHERE e.dept_code = d.dept_id
+  AND e.job_code = j.job_code
+;
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- 82. 
+-- 출력결과를 참고하여,
+-- 인라인 뷰를 이용해 부서별로 최고급여를 받는 직원을 조회하시오.
+
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,e.salary 급여
+      ,t.max_sal 최고급여
+      ,t.min_sal 최저급여
+      ,ROUND(t.avg_sal, 2) 평균급여
+FROM employee e, department d,
+      ( SELECT DEPT_CODE
+            ,MAX(salary) MAX_SAL
+            ,MIN(salary) MIN_SAL
+            ,AVG(salary) AVG_SAL
+      FROM employee
+      GROUP BY dept_code ) t
+WHERE e.dept_code = d.dept_id
+  AND e.salary = t.max_sal;
+
+
+
+-- 83.
+-- 서브쿼리를 이용하여,
+-- 직원명이 '이태림' 인 사원과 같은 부서의 직원들을 조회하시오.
+
+SELECT emp_id 사원번호
+      ,emp_name 직원명
+      ,email 이메일
+      ,phone 전화번호
+FROM employee
+WHERE dept_code = (
+                     SELECT dept_id
+                     FROM employee
+                     WHERE emp_name = '이태림'
+                  )
+;
+
+
+-- 84.
+-- 사원 테이블에 존재하는 부서코드만 포함하는 부서를 조회하시오.
+-- (사원이 존재하는 부서만 조회하시오.)
+
+-- 1) 서브쿼리
+SELECT dept_id 부서번호
+      ,dept_title 부서명
+      ,location_id 지역명
+FROM department
+WHERE dept_id IN (
+                   SELECT DISTINCT dept_code
+                   FROM employee
+                   WHERE dept_code IS NOT NULL
+                 )
+ORDER BY dept_id ASC
+;
+
+-- 2) EXISTS
+SELECT dept_id 부서번호
+      ,dept_title 부서명
+      ,location_id 지역명
+FROM department d
+WHERE EXISTS ( SELECT * FROM employee e WHERE e.dept_code = d.dept_id )
+ORDER BY d.dept_id;
+
+
+
+-- 85.
+-- 사원 테이블에 존재하지 않는 부서코드만 포함하는 부서를 조회하시오.
+-- (사원이 존재하는 부서만 조회하시오.)
+
+-- 1) 서브쿼리
+SELECT dept_id 부서번호
+      ,dept_title 부서명
+      ,location_id 지역명
+FROM department
+WHERE dept_id NOT IN (
+                   SELECT DISTINCT dept_code
+                   FROM employee
+                   WHERE dept_code IS NOT NULL
+                 )
+ORDER BY dept_id ASC
+;
+
+-- 2) EXISTS
+SELECT dept_id 부서번호
+      ,dept_title 부서명
+      ,location_id 지역명
+FROM department d
+WHERE NOT EXISTS ( SELECT * FROM employee e WHERE e.dept_code = d.dept_id )
+ORDER BY d.dept_id;
+
+
+-- 86.
+-- EMPLOYEE 테이블의 DEPT_CODE 가 'D1' 인 부서의 최대급여 보다
+-- 더 큰 급여를 받는 사원을 조회하시오.
+
+-- 1단계 - DEPT_CODE 가 'D1' 인 부서의 최대급여
+SELECT MAX(salary)
+FROM employee
+WHERE dept_code = 'D1';
+
+-- 2단계 - 급여 > 최대급여 큰 경우로 조회
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_id 부서번호
+      ,d.dept_title 부서명
+      ,e.salary 급여
+FROM employee e
+    ,department d
+WHERE e.dept_code = d.dept_id
+  AND e.salary > (
+                  SELECT MAX(salary)
+                  FROM employee
+                  WHERE dept_code = 'D1'
+                  )
+;
+
+-- 2)
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_id 부서번호
+      ,d.dept_title 부서명
+      ,e.salary 급여
+FROM employee e
+    ,department d
+WHERE e.dept_code = d.dept_id
+  AND e.salary > ALL( SELECT salary FROM employee WHERE dept_code = 'D1' )
+;
+
+-- 87.
+-- EMPLOYEE 테이블의 DEPT_CODE 가 'D9' 인 부서의 최저급여 보다
+-- 더 큰 급여를 받는 사원을 조회하시오.
+
+-- 1단계 - DEPT_CODE 가 'D1' 인 부서의 최대급여
+SELECT MIN(salary)
+FROM employee
+WHERE dept_code = 'D9';
+
+-- 2단계 - 급여 > 최대급여 큰 경우로 조회
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_id 부서번호
+      ,d.dept_title 부서명
+      ,e.salary 급여
+FROM employee e
+    ,department d
+WHERE e.dept_code = d.dept_id
+  AND e.salary > (
+                  SELECT MIN(salary)
+                  FROM employee
+                  WHERE dept_code = 'D9'
+                  )
+;
+
+-- 2)
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_id 부서번호
+      ,d.dept_title 부서명
+      ,e.salary 급여
+FROM employee e
+    ,department d
+WHERE e.dept_code = d.dept_id
+  AND e.salary > ANY( SELECT salary FROM employee WHERE dept_code = 'D9' )
+;
+
+
+/*
+      ▶조인
+ : 여러 테이블을 조합하여 조회하는 방식
+
+  * 내부 조인 (INNER JOIN)
+    - 동등 조인 (EQUI JOIN)
+     : 등호(=) 연산자를 사용하여 2개 이상의 테이블을 연결하여 출력하는 방식
+      ex)
+      SELECT *
+      FROM A, B
+      WHERE A.x = B.y;
+
+  * 외부 조인 (OUTER JOIN)
+    - LEFT OUTER JOIN
+     : 왼쪽 테이블을 먼저 읽어드린 후, 조인 조건에 일치하는 오른쪽 테이블을 함께 조회하는 것
+      * 오른쪽 테이블 데이터는 NULL 로 조회된다.
+
+
+    - RIGHT OUTER JOIN
+     : 오른쪽 테이블을 먼저 읽어드린 후, 조인 조건에 일치하는 왼쪽 테이블을 함께 조회하는 것
+      * 왼쪽 테이블 데이터는 NULL 로 조회된다. 
+*/
+
+-- 88.
+-- EMPLOYEE 와 DEPARTMENT 테이블을 조인하여 출력하되,
+-- 부서가 없는 직원도 포함하여 출력하시오.
+
+SELECT NVL(e.emp_id, '(없음)') 사원번호
+      ,NVL(e.emp_name, '(없음)') 직원명
+      ,NVL(d.dept_id, '(없음)') 부서번호
+      ,NVL(d.dept_title, '(없음)') 부서명
+FROM employee e
+     LEFT JOIN department d 
+     ON ( e.dept_code = d.dept_id );
+
+-- null 로 나오는 데이터 : 부서가 없는 사원
+     
+
+-- 89.
+-- EMPLOYEE 와 DEPARTMENT 테이블을 조인하여 출력하되,
+-- 직원이 없는 부서도 포함하여 출력하시오.
+
+SELECT NVL( e.emp_id, '(없음)' ) 사원번호
+      ,NVL( e.emp_name, '(없음)' ) 직원명
+      ,NVL( d.dept_id, '(없음)' ) 부서번호
+      ,NVL( d.dept_title, '(없음)' ) 부서명
+FROM employee e
+     RIGHT JOIN department d 
+     ON ( e.dept_code = d.dept_id );
+
+-- null 로 나오는 데이터 : 사원이 없는 부서
+
+
+
+--90.
+-- 직원 및 부서 유무에 상관없이 출력하는 SQL문을 작성하시오.
+
+SELECT NVL( e.emp_id, '(없음)' ) 사원번호
+      ,NVL( e.emp_name, '(없음)' ) 직원명
+      ,NVL( d.dept_id, '(없음)' ) 부서번호
+      ,NVL( d.dept_name, '(없음)' ) 부서명
+FROM employee e
+     FULL JOIN department d ON ( e.dept_code = d.dept_id );
+
+-- 91.
+-- 사원번호, 직원명, 부서번호, 지역명, 국가명, 급여, 입사일자를 출력하시오.
+
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_id 부서번호
+      ,d.dept_title 부서명
+      ,l.local_name 지역명
+      ,n.national_name 국가명
+      ,e.salary 급여
+      ,e.hire_date 입사일자
+FROM employee e
+     LEFT JOIN department d ON e.dept_code = d.dept_id
+     LEFT JOIN location l ON d.location_id = l.local_code
+     LEFT JOIN national n USING(national_code)
+     ;
+
+-- USING : 조인하고자 하는 두 테이블의 컬럼명이 같은 경우,
+--         조인 조건을 간단하게 작성하는 키워드
+
+
+-- 92.
+-- 사원들 중 매니저를 출력하시오.
+-- 사원번호, 직원명, 부서명, 직급, 구분('매니저')
+
+-- 1단계
+-- manager_id 컬럼이 NULL 이 아닌 사원을 중복없이 조회
+-- 매니저들의 사원 번호
+SELECT DISTINCT manager_id
+FROM employee
+WHERE manager_id IS NOT NULL;
+
+-- 2단계
+-- employee, department, job 테이블을 조인하여 조합
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급
+      ,'매니저' 구분
+FROM employee e
+     LEFT JOIN department d ON e.dept_code = d.dept_id
+     JOIN job j USING(job_code)
+;
+
+-- 3단계
+-- 조인 결과 중, emp_id 가 매니저 사원번호인 경우만을 조회
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급
+      ,'매니저' 구분
+FROM employee e
+     LEFT JOIN department d ON e.dept_code = d.dept_id
+     JOIN job j USING(job_code)
+WHERE emp_id IN (
+                  SELECT DISTINCT manager_id
+                  FROM employee
+                  WHERE manager_id IS NOT NULL
+                )
+;
+
+
+-- 93
+-- 사원만 조회하시오.
+
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급
+      ,'사원' 구분
+FROM employee e
+     LEFT JOIN department d ON e.dept_code = d.dept_id
+     JOIN job j USING(job_code)
+WHERE emp_id NOT IN (
+                  SELECT DISTINCT manager_id
+                  FROM employee
+                  WHERE manager_id IS NOT NULL
+                )
+;
+
+-- 94.
+-- UNION 키워드를 사용하여,
+-- 매니저와 사원 모두를 조회하시오.
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급
+      ,'매니저' 구분
+FROM employee e
+     LEFT JOIN department d ON e.dept_code = d.dept_id
+     JOIN job j USING(job_code)
+WHERE emp_id IN (
+                  SELECT DISTINCT manager_id
+                  FROM employee
+                  WHERE manager_id IS NOT NULL
+                )
+UNION
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급
+      ,'사원' 구분
+FROM employee e
+     LEFT JOIN department d ON e.dept_code = d.dept_id
+     JOIN job j USING(job_code)
+WHERE emp_id NOT IN (
+                  SELECT DISTINCT manager_id
+                  FROM employee
+                  WHERE manager_id IS NOT NULL
+                )
+
+;
 
 
 
