@@ -642,18 +642,11 @@ CREATE TABLE MS_STUDENT
     , REG_DATE DATE DEFAULT sysdate NOT NULL 
     , UPD_DATE DATE DEFAULT sysdate NOT NULL 
     , ETC VARCHAR2() DEFAULT '없음' 
-    , CONSTRAINT MS_STUDENT_PK PRIMARY KEY 
-  (
-    ST_NO 
-  )
-  ENABLE 
+    , 
+    CONSTRAINT MS_STUDENT_PK PRIMARY KEY (ST_NO ) ENABLE 
 );
 
-ALTER TABLE MS_STUDENTADD CONSTRAINT MS_STUDENT_UK1 UNIQUE 
-(
-  EMAIL 
-)
-ENABLE;
+ALTER TABLE MS_STUDENTADD CONSTRAINT MS_STUDENT_UK1 UNIQUE ( EMAIL ) ENABLE;
 
 COMMENT ON TABLE MS_STUDENT IS '학생들의 정보를 관리한다.';
 COMMENT ON COLUMN MS_STUDENT.ST_NO IS '학생 번호';
@@ -1309,7 +1302,7 @@ REFERENCES 참조테이블(참조 속성);
       * 사용 위치에 다른 분류
       - 스칼라 서브쿼리 : SELECT 절에 사용하는 서브쿼리
       - 인라인 뷰       : FROM 절에 사용하는 서브쿼리
-      - 서브 쿼리       : WHERE 절에 사용하는 서브커리
+      - 서브 쿼리       : WHERE 절에 사용하는 서브퀄리
 */
 
 -- 81.
@@ -1551,15 +1544,22 @@ WHERE e.dept_code = d.dept_id
       FROM A, B
       WHERE A.x = B.y;
 
+    - INNER JOIN
+      : 왼쪽 테이블과 오른쪽 테이블의 조인 조건에 일치하여, 
+         교집합이 되는 데이털를 조회하는 것
+      
+
   * 외부 조인 (OUTER JOIN)
     - LEFT OUTER JOIN
-     : 왼쪽 테이블을 먼저 읽어드린 후, 조인 조건에 일치하는 오른쪽 테이블을 함께 조회하는 것
-      * 오른쪽 테이블 데이터는 NULL 로 조회된다.
+     : 왼쪽 테이블을 먼저 읽어드린 후, 
+       조인 조건에 일치하는 오른쪽 테이블을 함께 조회하는 것
+      * 조건에 만족하지 않는, 오른쪽 테이블 데이터는 NULL 로 조회된다.
 
 
     - RIGHT OUTER JOIN
-     : 오른쪽 테이블을 먼저 읽어드린 후, 조인 조건에 일치하는 왼쪽 테이블을 함께 조회하는 것
-      * 왼쪽 테이블 데이터는 NULL 로 조회된다. 
+     : 오른쪽 테이블을 먼저 읽어드린 후, 
+       조인 조건에 일치하는 왼쪽 테이블을 함께 조회하는 것
+      * 조건에 만족하지 않는, 왼쪽 테이블 데이터는 NULL 로 조회된다. 
 */
 
 -- 88.
@@ -1599,7 +1599,7 @@ FROM employee e
 SELECT NVL( e.emp_id, '(없음)' ) 사원번호
       ,NVL( e.emp_name, '(없음)' ) 직원명
       ,NVL( d.dept_id, '(없음)' ) 부서번호
-      ,NVL( d.dept_name, '(없음)' ) 부서명
+      ,NVL( d.dept_title, '(없음)' ) 부서명
 FROM employee e
      FULL JOIN department d ON ( e.dept_code = d.dept_id );
 
@@ -1717,6 +1717,415 @@ WHERE emp_id NOT IN (
 ;
 
 
+
+
+-- 95.
+-- 매니저와 사원을 구분하여 출력하시오.
+
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급
+      --
+      , CASE
+            WHEN emp_id IN (
+                              SELECT DISTINCT manager_id
+                              FROM employee
+                              WHERE manager_id IS NOT NULL
+                           )
+            THEN '매니저'
+            ELSE '사원'
+        END 구분
+FROM employee e
+     LEFT JOIN department d ON e.dept_code = d.dept_id
+     JOIN job j USING(job_code)
+;
+
+
+-- 96.
+-- EMPLOYEE, DEPARTMENT, JOB 테이블을 조인하여 조회하시오
+-- 사원의 나이와 성별을 구하여 출력하고,
+-- 주민등록번호 뒷자리 첫글자를 제외하고 마스킹하여 출력하시오.
+
+SELECT e.emp_id 사원번호
+      ,e.emp_name 직원명
+      ,d.dept_title 부서명
+      ,j.job_name 직급
+      , CASE
+            WHEN emp_id IN (
+                              SELECT DISTINCT manager_id
+                              FROM employee
+                              WHERE manager_id IS NOT NULL
+                           )
+            THEN '매니저'
+            ELSE '사원'
+        END 구분
+      -- 성별 (주민등록번호 뒷자리 첫글자)
+      -- 200101-1******
+      , CASE
+            WHEN SUBSTR(emp_no, 8, 1) IN ('1','3') THEN '남자'
+            WHEN SUBSTR(emp_no, 8, 1) IN ('2','4') THEN '여자'
+        END 성별
+      , 
+      -- 나이 
+      -- 올해년도
+      TO_CHAR( sysdate, 'YYYY' )
+      -
+      (
+            -- 출생년도 (1995, 2015)
+            CASE
+                  WHEN SUBSTR(emp_no, 8, 1) IN ('1','2') THEN '19'
+                  WHEN SUBSTR(emp_no, 8, 1) IN ('3','4') THEN '20'
+            END || SUBSTR( emp_no, 1, 2 )
+            
+      ) + 1 현재나이
+      -- 
+      , 
+      TRUNC(
+            MONTHS_BETWEEN(
+                  sysdate,
+                   -- 생년월일 (19950101, 20150101)
+                  TO_DATE(
+                        CASE
+                              WHEN SUBSTR(emp_no, 8, 1) IN ('1','2') THEN '19'
+                              WHEN SUBSTR(emp_no, 8, 1) IN ('3','4') THEN '20'
+                        END || SUBSTR( emp_no, 1, 6 )
+                  )
+            )
+            / 12
+      ) 만나이
+      ,
+      -- 주민등록번호 마스킹하기
+      RPAD( SUBSTR(emp_no, 1, 8), 14, '*' ) 주민등록번호
+      
+FROM employee e
+     LEFT JOIN department d ON e.dept_code = d.dept_id
+     JOIN job j USING(job_code)
+;
+
+
+-- 97
+-- 
+SELECT 
+       ROWNUM 순번
+      ,emp_id 사원번호
+      ,emp_name 직원명
+      ,dept_title 부서명
+      ,job_name 직급
+      , CASE
+            WHEN emp_id IN (
+                              SELECT DISTINCT manager_id
+                              FROM employee
+                              WHERE manager_id IS NOT NULL
+                           )
+            THEN '매니저'
+            ELSE '사원'
+        END 구분
+      , CASE
+            WHEN SUBSTR(emp_no, 8, 1) IN ('1','3') THEN '남자'
+            ELSE '여자'
+        END 성별
+      ,
+      TO_CHAR( sysdate, 'YYYY' )
+      -
+      (
+            CASE
+                  WHEN SUBSTR(emp_no, 8, 1) IN ('1','2') THEN '19'
+                  WHEN SUBSTR(emp_no, 8, 1) IN ('3','4') THEN '20'
+            END || SUBSTR( emp_no, 1, 2 )
+            
+      ) + 1 현재나이
+      -- 
+      , 
+      TRUNC(
+            MONTHS_BETWEEN(
+                  sysdate,
+                  TO_DATE(
+                        CASE
+                              WHEN SUBSTR(emp_no, 8, 1) IN ('1','2') THEN '19'
+                              WHEN SUBSTR(emp_no, 8, 1) IN ('3','4') THEN '20'
+                        END || SUBSTR( emp_no, 1, 6 )
+                  )
+            )
+            / 12
+      ) 만나이
+
+      -- ,TO_CHAR( sysdate, 'YYYY' ) - TO_CHAR( hire_date, 'YYYY' ) 근속년수
+      ,TRUNC(MONTHS_BETWEEN(sysdate, hire_date) / 12) 근속년수 
+      ,RPAD( SUBSTR(emp_no, 1, 8), 14, '*' ) 주민등록번호
+      ,TO_CHAR( hire_date, 'YYYY.MM.DD' ) 입사일자
+      -- (급여+보너스) * 12
+      ,TO_CHAR( ( salary + NVL( (salary*bonus), 0 ) ) * 12, '999,999,999,999' ) 연봉
+       
+FROM employee e
+     LEFT JOIN department d ON ( e.dept_code = d.dept_id )
+     JOIN job j USING(job_code)
+;
+
+
+-- VIEW 연습
+-- 뷰 생성
+CREATE OR REPLACE VIEW v_emp_dept AS
+SELECT e.emp_id
+      ,e.emp_name
+      ,d.dept_id
+      ,d.dept_title
+FROM employee e
+    ,department d
+WHERE e.dept_code = d.dept_id
+;
+
+-- 뷰 삭제
+DROP VIEW v_emp_dept;
+
+SELECT *
+FROM v_emp_dept
+;
+
+-- 98.
+-- VE_EMP_DEPT 를 생성하시오
+
+-- DROP VIEW VE_EMP_DEPT
+CREATE OR REPLACE VIEW VE_EMP_DEPT AS
+SELECT e.emp_id
+      ,e.emp_name
+      ,d.dept_id
+      ,d.dept_title
+      ,e.email
+      ,e.phone
+      -- 주민등록번호 마스킹
+      ,RPAD( SUBSTR(emp_no, 1, 8), 14, '*' ) emp_no
+      -- 입사일자
+      ,TO_CHAR( hire_date, 'YYYY.MM.DD' ) hire_date
+      -- 급여
+      ,TO_CHAR( salary, '999,999,999' ) salary
+      -- 연봉
+      ,TO_CHAR( (salary + NVL( salary*bonus, 0 ) ) * 12, '999,999,999,999' ) yr_salary
+FROM employee e
+     LEFT JOIN department d ON (e.dept_code = d.dept_id)
+;
+
+SELECT *
+FROM VE_EMP_DEPT;
+
+
+/*
+      시퀀스
+      : 자동 순번을 반환하는 DB 객체
+
+      - 시퀀스 생성
+      CREATE SEQUENCE 시퀀스명
+      INCREMENT BY 증감숫자
+      START WITH 시작숫자
+      MINVALUE 최솟값
+      MAXVALUE 최댓값;
+*/
+-- 시퀀스 생성
+CREATE SEQUENCE my_seq
+INCREMENT BY 1
+START WITH 1
+MINVALUE 1
+MAXVALUE 1000
+;
+
+-- 시퀀스 삭제
+DROP SEQUENCE my_seq;
+
+-- 현재 순번
+SELECT my_seq.currval FROM dual;
+
+-- 다음 순번
+SELECT my_seq.nextval FROM dual;
+
+
+
+-- 99.
+-- 시퀀스를 생성하시오.
+-- SEQ_MS_USER
+-- SEQ_MS_BOARD
+-- SEQ_MS_FILE
+-- SEQ_MS_REPLY
+-- (시작:1,증가값:1,최솟값:1,최댓값:1000000)
+-- 시퀀스 생성
+CREATE SEQUENCE seq_ms_user
+INCREMENT BY 1
+START WITH 1
+MINVALUE 1
+MAXVALUE 1000000;
+
+CREATE SEQUENCE seq_ms_board
+INCREMENT BY 1
+START WITH 1
+MINVALUE 1
+MAXVALUE 1000000;
+
+CREATE SEQUENCE seq_ms_file
+INCREMENT BY 1
+START WITH 1
+MINVALUE 1
+MAXVALUE 1000000;
+
+CREATE SEQUENCE seq_ms_reply
+INCREMENT BY 1
+START WITH 1
+MINVALUE 1
+MAXVALUE 1000000;
+
+
+-- 100.
+SELECT SEQ_MS_USER.nextval FROM dual;
+SELECT SEQ_MS_USER.currval FROM dual;
+
+-- 101.
+-- SEQ_MS_USER 삭제하는 SQL 문을 작성하시오.
+DROP SEQUENCE SEQ_MS_USER;
+
+CREATE SEQUENCE SEQ_MS_USER
+START WITH 1
+INCREMENT BY 1
+MINVALUE 1
+MAXVALUE 1000000;
+
+
+
+-- 102.
+-- 시퀀스 SEQ_MS_USER 를 적용하여 MS_USER 의
+-- USER_NO 가 증분되어 추가되도록 예시와 같이 데이터를 추가하는 SQL 문을 작성하시오.
+
+INSERT INTO MS_USER( user_no, user_id, user_pw, user_name,
+                     birth, tel, address, reg_date, upd_date )
+VALUES ( SEQ_MS_USER.nextval, 'ALOHA', '123456', '김휴먼',
+         '2002/01/01', '010-1234-1234', '서울 영등포', sysdate, sysdate
+       );
+
+
+INSERT INTO MS_USER( user_no, user_id, user_pw, user_name,
+                     birth, tel, address, reg_date, upd_date )
+VALUES ( SEQ_MS_USER.nextval, 'human', '123456', '박휴먼',
+         '2002/01/01', '010-3688-3688', '서울 여의도', sysdate, sysdate
+       );
+
+SELECT * FROM ms_user;
+
+
+-- 103.
+-- 시퀀스 SEQ_MS_USER 의 최댓값을 100,000,000 로 수정하시오.
+ALTER SEQUENCE SEQ_MS_USER MAXVALUE 100000000;
+
+
+
+-- 104.
+-- 인덱스 정보를 조회하시오.
+-- USER_IND_COLUMNS 테이블의 INDEX_NAME, TABLE_NAME, COLUMN_NAME 속성을 조회하시오
+
+SELECT index_name, table_name, column_name
+FROM user_ind_columns;
+
+
+-- 105.
+-- MS_USER 테이블의 USER_NAME 에 대한
+-- 인덱스 IDX_MS_USER_NAME 을 생성하시오.
+
+-- 인덱스 생성
+CREATE INDEX IDX_MS_USER_NAME ON MS_USER(user_name);
+
+-- 인덱스 삭제
+DROP INDEX IDX_MS_USER_NAME;
+
+
+
+SELECT * FROM MS_USER;
+
+-- GROUP BY
+
+
+-- 그룹 관련 함수 정리
+
+-- ROLLUP
+-- * ROLLUP 미사용
+SELECT dept_code, job_code
+      ,COUNT(*), MAX(salary), SUM(salary), TRUNC( AVG(salary), 2)
+FROM employee
+GROUP BY dept_code, job_code
+ORDER BY dept_code, job_code
+;
+
+-- * ROLLUP 사용
+-- : 그룹 기준으로 집계한 결과와 추가적으로 총 집계 정보 출력하는 함수
+SELECT dept_code, job_code
+      ,COUNT(*), MAX(salary), SUM(salary), TRUNC( AVG(salary), 2)
+FROM employee
+GROUP BY ROLLUP(dept_code, job_code)
+ORDER BY dept_code, job_code
+;
+
+
+-- CUBE 사용
+-- : 가능한 모든 조합별로의 집계정보를 출력하는 함수
+SELECT dept_code, job_code
+      ,COUNT(*), MAX(salary), SUM(salary), TRUNC( AVG(salary), 2)
+FROM employee
+GROUP BY CUBE(dept_code, job_code)
+ORDER BY dept_code, job_code
+;
+
+
+-- GROUPING SETS( )
+-- : 그룹컬럼이 여러 개 일 때, 집계한 정보를 컬럼별로 출력하는 함수
+
+
+-- 특정 부서의 직급별 인원 수
+SELECT dept_code, job_code, COUNT(*)
+FROM employee
+GROUP BY GROUPING SETS((dept_code, job_code))
+ORDER BY dept_code, job_code
+;
+
+/*
+- GROUPING
+: 그룹화한 컬럼들이 그룹화가 이루어진 상태인지 여부를 출력하는 함수
+  - 그룹화 O : 출력결과 0
+  - 그룹화 X : 출력결과 1
+
+SELECT 컬럼1, 컬럼2, 컬럼3, ...
+          ,GROUPING 그룹화 여부를 확인할 컬럼, ...
+FROM 테이블명
+GROUP BY [ROLLUP || CUBE] 그룹컬럼;
+
+*/
+SELECT dept_code
+      ,job_code
+      ,MAX(salary)
+      ,SUM(salary)
+      ,TRUNC( AVG(salary), 2 )
+      ,GROUPING(dept_code) "부서코드 그룹여부"
+      ,GROUPING(job_code) "직급코드 그룹여부"
+FROM employee
+WHERE dept_code IS NOT NULL
+     ,job_code IS NOT NULL
+GROUP BY CUBE(dept_code, job_code)
+;
+
+
+/*    
+  - LISTAGG( 컬럼, [구분자] )
+  -> LIST + Aggregate 
+   : 데이터 목록 + 합쳐서 출력하는 함수
+   WITHIN GROUP (ORDER BY 정렬기준 컬럼)
+   : 그룹컬럼을 기준으로, 
+     그룹화된 데이터를 하나의 열에 가로로 나열하여 출력하는 함수
+
+*/
+
+SELECT dept_code 부서코드
+      ,LISTAGG( emp_name, ', ' )
+       WITHIN GROUP (ORDER BY emp_name) "부서별 사원이름목록"
+FROM employee
+GROUP BY dept_code
+ORDER BY dept_code
+; 
+
+-- PIVOT 부터 이어서...
 
 
 
