@@ -1573,6 +1573,8 @@ SELECT NVL(e.emp_id, '(없음)') 사원번호
 FROM employee e
      LEFT JOIN department d 
      ON ( e.dept_code = d.dept_id );
+     
+select * from employee;
 
 -- null 로 나오는 데이터 : 부서가 없는 사원
      
@@ -2125,7 +2127,336 @@ GROUP BY dept_code
 ORDER BY dept_code
 ; 
 
--- PIVOT 부터 이어서...
+-- PIVOT (행 -> 열)
+-- : 그룹화할 행 데이터를 열로 바꾸어서 출력하는 함수
+
+SELECT dept_code, job_code
+      ,LISTAGG(emp_name, ', ')
+       WITHIN GROUP(ORDER BY salary DESC) "부서별 사원목록"
+      ,MAX(salary) 최대급여
+FROM employee
+GROUP BY dept_code, job_code
+ORDER BY dept_code, job_code
+;
+
+-- PIVOT 함수를 이용해서 직급은 행에, 
+-- 부서는 열에 그룹화하여 최고급여를 출력하시오.
+SELECT *
+FROM (
+       SELECT dept_code, job_code, salary
+       FROM employee
+     )
+     PIVOT (
+         MAX(salary)
+         -- 컬럼으로 올릴 속성들
+         FOR dept_code IN ('D1','D2','D3','D4','D5','D6','D7','D8','D9')
+     )
+ORDER BY job_code;
+
+
+-- PIVOT 함수를 이용해서 부서는 행에, 
+-- 직급은 열에 그룹화하여 최고급여를 출력하시오.
+SELECT *
+FROM (
+       SELECT dept_code, job_code, salary
+       FROM employee
+     )
+     PIVOT (
+         MAX(salary)
+         -- 컬럼으로 올릴 속성들
+         FOR job_code IN ('J1','J2','J3','J4','J5','J6','J7')
+     )
+ORDER BY dept_code;
+
+
+SELECT *
+FROM employee
+;
+
+-- UNPIVOT (열 -> 행)
+-- : 그룹화된 결과인 열을 행 데이터로 바꾸어서 출력하는 함수
+
+SELECT *   
+FROM (
+            SELECT dept_code
+                  ,MAX(  DECODE(job_code, 'J1', salary) ) J1 -- "대표 최대급여"
+                  ,MAX(  DECODE(job_code, 'J2', salary) ) J2 -- "부사장 최대급여"
+                  ,MAX(  DECODE(job_code, 'J3', salary) ) J3 -- "부장 최대급여"
+                  ,MAX(  DECODE(job_code, 'J4', salary) ) J4 -- "차장 최대급여"
+                  ,MAX(  DECODE(job_code, 'J5', salary) ) J5 -- "과장 최대급여"
+                  ,MAX(  DECODE(job_code, 'J6', salary) ) J6 -- "대리 최대급여"
+                  ,MAX(  DECODE(job_code, 'J7', salary) ) J7 -- "사원 최대급여"
+            FROM employee
+            GROUP BY dept_code
+            ORDER BY dept_code
+      )
+      UNPIVOT (
+            salary
+            FOR job_code IN ( J1, J2, J3, J4, J5, J6, J7 )
+      )
+;
+
+
+--
+ SELECT dept_code
+                  ,MAX(  DECODE(job_code, 'J1', salary) ) J1 -- "대표 최대급여"
+                  ,MAX(  DECODE(job_code, 'J2', salary) ) J2 -- "부사장 최대급여"
+                  ,MAX(  DECODE(job_code, 'J3', salary) ) J3 -- "부장 최대급여"
+                  ,MAX(  DECODE(job_code, 'J4', salary) ) J4 -- "차장 최대급여"
+                  ,MAX(  DECODE(job_code, 'J5', salary) ) J5 -- "과장 최대급여"
+                  ,MAX(  DECODE(job_code, 'J6', salary) ) J6 -- "대리 최대급여"
+                  ,MAX(  DECODE(job_code, 'J7', salary) ) J7 -- "사원 최대급여"
+            FROM employee
+            GROUP BY dept_code
+            ORDER BY dept_code;
+
+
+
+
+
+
+-- 조인
+
+-- 내부조인
+--   동등조인
+--   : 등호(=) 연산자를 사용하여 2개 이상의 테이블을 조합하여 조회하는 방식
+SELECT e.emp_name, d.dept_title, e.salary
+  FROM employee e
+      ,department d
+WHERE e.dept_code = d.dept_id;
+
+-- INNER JOIN  (동등조인과 대응)
+SELECT e.emp_name, d.dept_title, e.salary
+  FROM employee e 
+       INNER JOIN department d ON (e.dept_code = d.dept_id);
+
+
+--   세미조인
+--    : 서브 쿼리에 존재하는 데이터만 메인 쿼리에서 추출하여 출력하는 방식
+--      * IN 또는 EXISTS 연산자를 사용한 조인
+--   급여가 3000000 이상인 부서를 출력하시오.
+SELECT *
+FROM department d
+WHERE EXISTS (
+                  SELECT *
+                  FROM employee e
+                  WHERE e.dept_code = d.dept_id
+                    AND salary >= 3000000
+             )
+;
+
+SELECT *
+FROM department d
+WHERE dept_id IN (
+                  SELECT dept_code
+                  FROM employee e
+                  WHERE e.dept_code = d.dept_id
+                    AND salary >= 3000000
+
+                 )
+;
+
+
+--   안티조인
+--   : 서브 쿼리에 존재하는 데이터만 제외하고,
+--      메인 쿼리에서 추출하여 조회하는 방식
+
+SELECT *
+FROM department d
+WHERE NOT EXISTS (
+                  SELECT *
+                  FROM employee e
+                  WHERE e.dept_code = d.dept_id
+                    AND salary >= 3000000
+                  )
+;
+
+SELECT *
+FROM department d
+WHERE dept_id NOT IN (
+                  SELECT dept_code
+                  FROM employee e
+                  WHERE e.dept_code = d.dept_id
+                    AND salary >= 3000000
+
+                 )
+;
+
+
+
+
+
+
+--   셀프조인
+--  : 동일한 하나의 테이블을 2번 이상 조합하여 출력하는 방식
+
+--    같은 부서의 사원에 대한 매니저를 출력하시오.
+SELECT b.emp_id 사원번호
+      ,b.emp_name 사원명
+      ,a.emp_name 매니저명
+FROM employee a,
+     employee b
+WHERE a.emp_id = b.manager_id
+  AND a.dept_code = b.dept_code
+;
+
+
+
+
+-- 외부 조인 (OUTER JOIN)
+-- LEFT OUTER JOIN
+-- : 왼쪽 테이블을 먼저 읽어드린 후,
+--   조인 조건에 일치하는 오른쪽 테이블도 함께 조회하는 것
+--   * 조건에 불일치하는 오른쪽 테이블은 NULL 로 조회된다.
+
+-- 1) ANSI 조인
+SELECT e.emp_id
+      ,e.emp_name
+      ,d.dept_id
+      ,d.dept_title
+FROM employee e LEFT OUTER JOIN department d
+                ON e.dept_code = d.dept_id
+;
+    
+-- 2) 기존 조인
+--  조인 조건에서 데이터가 없는 테이블의 컬럼에 (+) 기호를 붙여준다
+SELECT e.emp_id
+      ,e.emp_name
+      ,d.dept_id
+      ,d.dept_title
+FROM employee e
+    ,department d
+WHERE e.dept_code = d.dept_id (+);
+
+
+-- RIGHT OUTER JOIN
+-- : 오른쪽 테이블을 먼저 읽어드린 후,
+--   조인 조건에 일치하는 왼쪽 테이블을 함께 조회하는 것
+--   *조인 조건에 불일치 하는 왼쪽 테이블 데이터는 NULL 로 조회된다.
+
+-- 1) ANSI 조인
+SELECT e.emp_id
+      ,e.emp_name
+      ,d.dept_id
+      ,d.dept_title
+FROM employee e RIGHT OUTER JOIN department d
+                ON e.dept_code = d.dept_id
+;
+    
+-- 2) 기존 조인
+--  조인 조건에서 데이터가 없는 테이블의 컬럼에 (+) 기호를 붙여준다
+--  WHERE A.공통컬럼(+) = B.공통컬럼;
+SELECT e.emp_id
+      ,e.emp_name
+      ,d.dept_id
+      ,d.dept_title
+FROM employee e
+    ,department d
+WHERE e.dept_code(+) = d.dept_id;
+
+
+
+
+
+
+-- FULL OUTER JOIN
+-- : - 조인 조건에 일치하는 왼쪽 테이블과 오른쪽 테이블의 교집합이 되는 데이터
+--   - 조인 조건에 일치하지 않는 왼쪽 테이블 데이터(오른쪽 테이블 데이터 NULL)
+--   - 조인 조건에 일치하지 않는 오른쪽 테이블 데이터(왼쪽 테이블 데이터 NULL)
+
+-- * ANSI 조인만 있다.
+SELECT e.emp_id
+      ,e.emp_name
+      ,d.dept_id
+      ,d.dept_title
+FROM employee e FULL OUTER JOIN department d
+                ON e.dept_code = d.dept_id;
+
+
+
+SELECT e.emp_id
+      ,e.emp_name
+      ,d.dept_id
+      ,d.dept_title
+FROM employee e
+    ,department d
+WHERE e.dept_code(+) = d.dept_id(+);  -- 불가능
+
+
+-- 카테시안 조인
+-- : 하나의 테이블 A와 다른 하나의 테이블 B의 모든 행을 조회하는 방식
+--  (A 행의 수) x (B행의 수) = (조회 결과의 행의 수)
+
+SELECT *
+FROM employee e
+    ,department d
+;
+
+
+SELECT ROWNUM  -- 행번호
+      ,e.*
+      ,d.*
+FROM employee e
+    ,department d
+;
+
+
+
+
+
+
+-- CROSS 조인
+-- : 카테시안 조인을 ANSI 문법으로 사용한 조회
+SELECT *
+FROM employee e
+     CROSS JOIN department d;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- ANSI 조인 (JOIN 키워드)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
